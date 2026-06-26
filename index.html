@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar & Battery Calculator</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            background-color: #f0f2f5; 
+            color: #333;
+        }
+        .container { 
+            max-width: 100%; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+        }
+        h2 { 
+            color: #2c3e50; 
+            margin-top: 0;
+            text-align: center;
+            font-size: 22px;
+        }
+        .section-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #7f8c8d;
+            margin-top: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        label { 
+            display: block; 
+            margin: 12px 0 6px; 
+            font-weight: 600; 
+            font-size: 14px;
+        }
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 5px; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+            box-sizing: border-box;
+            font-size: 16px; /* Prevents iOS/Android zooming on focus */
+        }
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+        button:hover { background: #219150; }
+        .result { 
+            margin-top: 25px; 
+            padding: 15px; 
+            background: #e8f8f5; 
+            border-left: 5px solid #27ae60; 
+            border-radius: 4px;
+            display: none; 
+        }
+        .result strong { color: #111; }
+        .metric {
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #d1f2eb;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>☀️ Solar Calculator</h2>
+    
+    <div class="section-title">1. Power Load</div>
+    <label for="load">Total Load (Watts):</label>
+    <input type="number" id="load" value="500" placeholder="e.g., 500">
+
+    <label for="hours">Backup Runtime Needed (Hours):</label>
+    <input type="number" id="hours" value="6" placeholder="e.g., 6">
+
+    <div class="section-title">2. Battery Bank</div>
+    <label for="batteryVolt">Battery System Voltage (V):</label>
+    <select id="batteryVolt">
+        <option value="12">12V Setup</option>
+        <option value="24">24V Setup</option>
+        <option value="48">48V Setup</option>
+    </select>
+
+    <label for="batteryAh">Single Battery Capacity (Ah):</label>
+    <input type="number" id="batteryAh" value="200" placeholder="e.g., 200">
+
+    <label for="dod">Battery Type (Depth of Discharge):</label>
+    <select id="dod">
+        <option value="0.50">Lead-Acid / AGM (50% Discharge)</option>
+        <option value="0.80">Lithium LiFePO4 (80% Discharge)</option>
+    </select>
+
+    <div class="section-title">3. Solar Array</div>
+    <label for="panelWatt">Single Panel Wattage (W):</label>
+    <input type="number" id="panelWatt" value="400" placeholder="e.g., 400">
+
+    <button onclick="calculateSolar()">Calculate Setup</button>
+
+    <div class="result" id="output"></div>
+</div>
+
+<script>
+function calculateSolar() {
+    // 1. Get user input figures
+    const load = parseFloat(document.getElementById('load').value);
+    const hours = parseFloat(document.getElementById('hours').value);
+    const batteryVolt = parseFloat(document.getElementById('batteryVolt').value);
+    const batteryAh = parseFloat(document.getElementById('batteryAh').value);
+    const dod = parseFloat(document.getElementById('dod').value);
+    const panelWatt = parseFloat(document.getElementById('panelWatt').value);
+    
+    // Safety constants
+    const peakSunHours = 5.0; 
+    const systemEfficiency = 0.8; 
+
+    // 2. Perform math rules
+    const dailyEnergyWh = load * hours;
+    
+    // Battery Bank Requirement
+    const requiredAh = dailyEnergyWh / (batteryVolt * dod);
+    const totalBatteries = Math.ceil(requiredAh / batteryAh);
+    
+    // Solar Panel Requirement
+    const requiredPanelWatts = dailyEnergyWh / (peakSunHours * systemEfficiency);
+    const totalPanels = Math.ceil(requiredPanelWatts / panelWatt);
+
+    // 3. Render directly onto mobile screen
+    const outputDiv = document.getElementById('output');
+    outputDiv.style.display = 'block';
+    outputDiv.innerHTML = `
+        <h3 style="margin-top:0; color:#16a085;">📋 Recommended Setup</h3>
+        
+        <div class="metric">
+            Daily Energy Load: <strong>${dailyEnergyWh.toLocaleString()} Wh</strong> (${(dailyEnergyWh/1000).toFixed(2)} kWh)
+        </div>
+        
+        <div class="metric">
+            Batteries Needed: <strong>${totalBatteries} unit(s)</strong> <br>
+            <small style="color:#7f8c8d;">(Target capacity: ${Math.round(requiredAh)} Ah total at ${batteryVolt}V)</small>
+        </div>
+        
+        <div class="metric">
+            Solar Panels Needed: <strong>${totalPanels} panel(s)</strong> <br>
+            <small style="color:#7f8c8d;">(Minimum array size: ${Math.round(requiredPanelWatts)} Watts)</small>
+        </div>
+        
+        <p style="font-size:12px; color:#7f8c8d; margin-bottom:0; margin-top:10px;">
+            *Calculations assume an average of 5 peak sun hours per day and a 20% system efficiency factor loss.
+        </p>
+    `;
+    
+    // Smooth scroll down to show the calculations on small displays
+    outputDiv.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
